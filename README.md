@@ -38,3 +38,22 @@ processing), I think it is a good idea, better than my initial solution where I
 store `(Color,Int)` pairs and then look for each colors in lists.
 
 
+### [Dec 3, 2023]
+
+This challenge involves my nemesis: _arithmetic_. I always have troubles
+handling rectangles in grids.
+
+I made a small generic module for rectangles, having done the AoC for a few
+years now, I know this will come in handy. 
+
+My initial solution did not work for size reasons. If you have `ABC` in a grid,
+is the height 1 or 0? For this solution I decided to go with 0. We will say that
+a rectangle is defined by its corners inclusively (so `ABC` is the rectangle
+between (x, y) and (x+2,y+0), of size (2,0)).
+
+Other than that, my solution is a bit messy and not very "smart". In particular,
+I browse through every elements all the time, while I could have written a
+smarter algorithm that only investigates elements that are "close by". Laziness
+(both mine and Haskell's) is to blame for that.
+
+
