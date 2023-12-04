@@ -89,9 +89,13 @@ instance (MonadFail m) => MonadFail (ParserT m s) where
 -- | Type synonym for parsers which wrapping monad is `Maybe`.
 type Parser = ParserT Maybe
 
--- | Run a parser with `Maybe` as its monad
+-- | Run a parser with `Maybe` as its monad (`runParserT` wrapper)
 runParser :: Parser s r -> s -> Maybe (s, r)
 runParser = runParserT
+
+-- | Execute a parser with `Maybe` as its monad (`execParserT` wrapper)
+execParser :: Parser s r -> s -> Maybe r
+execParser = execParserT
 
 -- | Create a parser from a function.
 parserTOf :: (s -> m (s, r)) -> ParserT m s r
@@ -181,6 +185,18 @@ notEmpty = failIf done
 parseAndBack :: Monad m => ParserT m s r -> ParserT m s r
 parseAndBack p1 =
     ParserT $ \s -> runParserT (p1 >>= (\x -> jump s >> return x)) s
+
+-- | Parser combinator that repeats the given parser and combine its result using a function, in a
+-- left fold fashion (f applied to z and result then passed down next parser).
+foldlP :: (Alternative m, Monad m) => (b -> a -> b) -> b -> ParserT m s a -> ParserT m s b
+foldlP f z p =
+    (p >>= \x -> foldlP f (f z x) p) <|> return z
+
+-- | Parser combinator that repeats the given parser and combine its result using a function, in a
+-- right fold fashion (f combines result of first parser with result of recursive call).
+foldrP :: (Alternative m, Monad m) => (a -> b -> b) -> b -> ParserT m s a -> ParserT m s b
+foldrP f z p =
+    (p >>= \x -> foldrP f z p >>= \z' -> return (f x z')) <|> return z
 
 infixr 3 %>, %:>
 
