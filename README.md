@@ -57,3 +57,14 @@ smarter algorithm that only investigates elements that are "close by". Laziness
 (both mine and Haskell's) is to blame for that.
 
 
+### [Dec 4, 2023]
+
+A fun challenge overall. I had the opportunity to extend the parsing library,
+and I found that my encoding was efficient-ish. I had troubles understanding the
+second part of the problem. I was afraid I had to add new cards at the end of
+the list (enqueue cards to scratch, in other words), which would have been a bit
+of an issue. But it's day 4, and Monday, so in fact it is fairly simple.
+
+
+
+
