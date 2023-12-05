@@ -86,6 +86,13 @@ instance (Monad m, Alternative m) => Alternative (ParserT m s) where
 instance (MonadFail m) => MonadFail (ParserT m s) where
   fail x = ParserT $ \s -> fail x
 
+infixl 1 >>>
+
+-- | A version of monadic sequencing (i.e., `>>`) that drops the right-hand side result and
+-- keeps the left-hand side one.
+(>>>) :: Monad m => ParserT m s a -> ParserT m s b -> ParserT m s a
+pa >>> pb = pa >>= \x -> pb >> return x
+
 -- | Type synonym for parsers which wrapping monad is `Maybe`.
 type Parser = ParserT Maybe
 
@@ -166,11 +173,11 @@ drop1 = ParserT $ \s ->
 -- This is intended for "transponder"-type parsers, which rewrites the input stream on their output (after
 -- transformation). The result is a `MonadPlus` to allow to chain the `keep1`. The result is usually a
 -- list as well in that case.
-keep1 :: (Stream s, Alternative m, Applicative f) => ParserT m (s a) (f a)
+keep1 :: (Stream s, Alternative m) => ParserT m (s a) a
 keep1 = ParserT $ \s ->
     case uncons s of
       Nothing -> empty
-      Just (x, xs) -> pure (xs, pure x)
+      Just (x, xs) -> pure (xs, x)
 
 -- | Parser that consumes nothing and fails if the stream is done/empty.
 notEmpty :: (Alternative m, Stream s) => ParserT m (s a) ()
@@ -225,6 +232,10 @@ parseP_ p = ParserT $ \s ->
       Just (x, xs) | p x -> pure (xs, ())
       _ -> empty
 
+parseUntil :: (Alternative m, Monad m, MonadPlus f, Stream s) => (a -> Bool) -> ParserT m (s a) (f a)
+parseUntil p =
+    (parseP (not . p) %:> parseUntil p) <|> return mzero
+
 -- | Parser that succeeds if the head of the stream is the given symbol, and fails otherwise or if the
 -- stream is done.
 parseChar :: (Alternative m, Stream s, Eq a) => a -> ParserT m (s a) a
@@ -253,6 +264,26 @@ parseSpace = parseP_ (Char.isSpace)
 -- | Parse a sequence of blank spaces (at least one) and drop the result.
 parseSpaces :: (Monad m, Alternative m, Stream s) => ParserT m (s Char) ()
 parseSpaces = parseSpace >> (parseSpaces <|> return ())
+
+-- | Parse a sequence of blank spaces (zero or more)
+parseSpaces0 :: (Monad m, Alternative m, Stream s) => ParserT m (s Char) ()
+parseSpaces0 = parseSpaces <|> return ()
+
+-- | Parse a normal blank space (U+20)
+parseSpace' :: (Alternative m, Stream s) => ParserT m (s Char) ()
+parseSpace' = parseP_ (== ' ')
+
+-- | Parse a sequence of normal blank spaces (at least one)
+parseSpaces' :: (Monad m, Alternative m, Stream s) => ParserT m (s Char) ()
+parseSpaces' = parseSpace' >> (parseSpaces' <|> return ())
+
+-- | Parse a sequence of normal blank spaces (can be 0)
+parseSpaces0' :: (Monad m, Alternative m, Stream s) => ParserT m (s Char) ()
+parseSpaces0' = parseSpaces' <|> return ()
+
+-- | Parse a newline
+parseNewline :: (Alternative m, Monad m, Stream s) => ParserT m (s Char) ()
+parseNewline = parseChar_ '\n' <|> parseSeq_ "\n\r" <|> parseSeq_ "\r\n"
 
 -- | Parse one digit and return the corresponding `Int`.
 parseDigit :: (Alternative m, Stream s) => ParserT m (s Char) Int
