@@ -66,5 +66,24 @@ the list (enqueue cards to scratch, in other words), which would have been a bit
 of an issue. But it's day 4, and Monday, so in fact it is fairly simple.
 
 
+### [Dec 5, 2023]
+
+I think I cooked far, far too much for this challenge, but I wanted to get a few
+things done. First, I wanted to use my parser library and see how it pans out
+with these kind of syntax (with significant newlines), and turns out it is quite
+good. Of course, my parser is way too generic for that challenge, but how well.
+
+Second, I smelled the first instance of my _other_ nemesis: _intervals_ (for
+reasons quite similar to arithmetic problems). I decided to implement an
+efficient "range set" which is a list of interval that is sorted and where no
+two interval intersect (representing an union of disjoint intervals).
+
+Not gonna lie, writing extraction (intersection + set difference) was a little
+bit cumbersome. But in the end, it works, and it works well.
+
+I almost had an integer problem I think, but in that case I would have gone to
+Integer and call it a day (so convenient).
+
+
 
 
