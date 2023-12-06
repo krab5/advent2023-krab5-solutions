@@ -85,5 +85,23 @@ I almost had an integer problem I think, but in that case I would have gone to
 Integer and call it a day (so convenient).
 
 
+### [Dec 6, 2023]
+
+Today we do second degree polynomial equation solving (yaaaaaay~). There is so
+little interest in doing so I decided to go contrarian and do it with
+non-deterministic list monad/applicative.
+
+To be fair, a systematic solution is: given max time N and record k, solve for p
+the equation p * (N - p) >= k. This boils down to finding the roots of
+- p² + N p - k. Assuming such roots exist and are pmin and pmax, then the number
+of integers that are a better score than k is (pmax - pmin + 1).
+
+So, instead, we can do state-space exploration with the list monad, which is
+much, much funnier. I also wrote a small function to concat integers, because I
+didn't want to touch the parser.
+
+All an all a bit of a disappointing challenge; what will I do for the remainder
+of the day. Work?? Urgh.
+
 
 
