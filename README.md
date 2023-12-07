@@ -104,4 +104,13 @@ All an all a bit of a disappointing challenge; what will I do for the remainder
 of the day. Work?? Urgh.
 
 
+### [Dec 7, 2023]
+
+A fun challenge overall, but my code does not bare a lot of subtlety I think
+(there is nothing particularly "smart" about it, save maybe for the way I have
+cards ordered by value but still keep the sequencing).
+
+Part 2 was more a question of thinking about different cases, but the cases are
+not two weird if you are attentive (I think).
+
 
