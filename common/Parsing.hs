@@ -217,6 +217,13 @@ p1 %> p2 = p1 >>= \r1 -> p2 >>= \r2 -> return (r1 `mplus` r2)
 (%:>) :: (Monad m, MonadPlus f) => ParserT m s a -> ParserT m s (f a) -> ParserT m s (f a)
 p1 %:> p2 = (fmap pure p1) %> p2
 
+infixl 7 `ptimes`
+
+-- | Repeat a parser a (positive or null) number of times and return the parsed sequence, in order.
+ptimes :: (Monad m, MonadPlus f) => ParserT m s a -> Int -> ParserT m s (f a)
+ptimes p 0 = return mzero
+ptimes p n | n > 0 = p %:> (ptimes p (n - 1))
+
 -- | Parser that succeeds if the head of the stream satisfies the given predicate. If it does not or if
 -- the stream is done, it fails. This returns the consumed symbol.
 parseP :: (Alternative m, Stream s) => (a -> Bool) -> ParserT m (s a) a
