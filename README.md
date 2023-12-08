@@ -114,3 +114,27 @@ Part 2 was more a question of thinking about different cases, but the cases are
 not two weird if you are attentive (I think).
 
 
+### [Dec 8, 2023]
+
+> What if the map isn't for people - what if the map is for ghosts?
+
+What a perfectly normal thing to think (look what a career in IT does to a
+person).
+
+The challenge was quite fun, typically one where the solution is not
+particularly complex, but where you need to be (a tiny bit) clever.
+
+Part 2 uses MAH BOY THE LCM OH YAAAAAAAASSSSSS love to see modular arithmetic.
+
+Just for fun I tried to brute-force it by actually calculating the whole path to
+see what would come of it. After 20 minutes there was nothing, and considering
+the shear number of digits of the answer, not surprising.
+
+Also, I am happy I ended up using Haskell, because I feel like we will see more
+and more big nums, which Haskell support natively (I did not want to delve in
+big num libraries in other languages tbh).
+
+
+
+
+
