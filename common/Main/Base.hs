@@ -53,7 +53,7 @@ doMainPre preProc preErr doProcess = do
                 Right ct -> do
                     procstart <- getCPUTime
                     res <- preProc logger ct
-                    if isFailed res
+                    if isFailure res
                         then do
                             preErr logger res
                             logger "Preprocessing failed; aborting."
