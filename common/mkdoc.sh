@@ -1,5 +1,5 @@
 #!/usr/bin/bash
 
-haddoc -h -o doc Parsing.hs
+haddock -h -o doc Parsing.hs
 
 
