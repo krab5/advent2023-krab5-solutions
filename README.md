@@ -142,5 +142,10 @@ An easy challenge, what am I suppose to do this week-end???
 I must admit I have to give it to lazyness (again), saving me when calculations
 would be terrible otherwise...
 
+<br>
+
+**Edit:** I was so bored I actually expanded my code base. I re-factored a bit
+the parsing library, added new "main makers"... Even did a bit of
+documentation.
 
 
