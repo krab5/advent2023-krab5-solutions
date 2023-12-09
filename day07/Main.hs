@@ -16,18 +16,17 @@ parseLine =
     (parseP Char.isAlphaNum `ptimes` 5) >>= \h -> parseSpaces >> parseNumber >>= \n -> parseSpaces0 >> end >>
         return (readHand h, readHand' h, n)
 
-process1 :: Logger -> String -> IO ()
-process1 logger ct =
-    case sequence $ map (execParser parseLine) $ lines ct of
-      Nothing -> logger "Parser error"
-      Just hands ->
-          let sorted  = sort $ map (\(x,_,z) -> (x,z)) hands
-              sorted' = sort $ map (\(_,y,z) -> (y,z)) hands in do
-              logger (printf "Parsed %d hands" (length sorted))
-              do1 sorted
-              logger "After J => *"
-              do1 sorted'
+preproc1 :: Logger -> String -> IO (Maybe [(Hand,Hand,Int)])
+preproc1 logger ct = return $ sequence $ map (execParser parseLine) $ lines ct
 
+process1 :: Logger -> [(Hand,Hand,Int)] -> IO ()
+process1 logger hands =
+    let sorted  = sort $ map (\(x,_,z) -> (x,z)) hands
+        sorted' = sort $ map (\(_,y,z) -> (y,z)) hands in do
+        logger (printf "Parsed %d hands" (length sorted))
+        do1 sorted
+        logger "After J => *"
+        do1 sorted'
     where do1 :: [(Hand,Int)] -> IO ()
           do1 sorted = do
               result <- foldM proc1 0 (zip sorted [1..])
@@ -39,6 +38,6 @@ process1 logger ct =
                   return $ acc + score
 
 main :: IO ()
-main = doMain process1
+main = doMainPre preproc1 (\logger _ -> logger "Parse error") process1
 
 

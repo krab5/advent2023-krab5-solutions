@@ -46,11 +46,8 @@ parseGame =
         (parseDraw %:> parseDraws0) >>= \ds -> end >> return (Game n ds)
     where parseDraws0 = ((parseChar_ ';' >> parseSpaces) >> parseDraw %:> parseDraws0) <|> zero
 
-getGames :: String -> [Game]
-getGames ct = 
-    case sequence $ map (runParser parseGame) $ lines ct of
-      Nothing -> []
-      Just x -> map snd x
+getGames :: String -> Maybe [Game]
+getGames = fmap (map snd) . sequence . map (runParser parseGame) . lines
 
 getConfig :: Logger -> IO Draw
 getConfig logger = do
@@ -76,18 +73,20 @@ power game =
                             , nblue = max (nblue d1) (nblue d2) }
           maxG = foldl maxD initc (draws game)
 
-process1 :: Logger -> String -> IO ()
-process1 logger ct =
-    let gs = getGames ct in do
-        logger (printf "Parsed %d games" (length gs))
-        d <- getConfig logger
-        let f = map game_id $ filter (isGamePossible d) gs in do
-            logger (printf "Possible games: %s" (show f))
-            logger (printf "Sum: %d" (sum f))
-        let p = sum $ map power gs in do
-            logger (printf "Total power: %d" p)
+preproc1 :: Logger -> String -> IO (Maybe [Game])
+preproc1 logger ct = return $ getGames ct
+
+process1 :: Logger -> [Game] -> IO ()
+process1 logger gs = do
+    logger (printf "Parsed %d games" (length gs))
+    d <- getConfig logger
+    let f = map game_id $ filter (isGamePossible d) gs in do
+        logger (printf "Possible games: %s" (show f))
+        logger (printf "Sum: %d" (sum f))
+    let p = sum $ map power gs in do
+        logger (printf "Total power: %d" p)
 
 main :: IO ()
-main = doMain process1
+main = doMainPre preproc1 (\logger _ -> logger "Parse error") process1
 
 

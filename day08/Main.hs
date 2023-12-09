@@ -51,28 +51,28 @@ findInit = filter (\[_,_,x] -> x == 'A') . M.keys
 isFinal :: Node -> Bool
 isFinal [_,_,x] = x == 'Z'
 
-process1 :: Logger -> String -> IO ()
-process1 logger ct = 
-    case execParser parse ct of
-      Nothing -> logger "Parse error"
-      Just (dirs,graph) -> do
-          logger (printf "Parsed %d directions, size of graph is %d" (length dirs) (M.size graph))
-          case step graph (cycle dirs) (=="ZZZ") "AAA" of
-            Nothing -> logger "No path from AAA to ZZZ!"
-            Just (_,n) -> logger (printf "Length of path from AAA to ZZZ: %d" n)
-          let init = findInit graph in do
-              logger (printf "Found %d initial nodes" (length init))
-              let paths = map (step graph (cycle dirs) isFinal) init in do
-                  result <- foldM proc1 (Just 1) (zip init paths)
-                  case result of
-                    Nothing -> logger "There is no solution to the problem"
-                    Just n -> logger (printf "A solution is reachable in %d steps" n)
+preproc1 :: Logger -> String -> IO (Maybe ([LR],Graph))
+preproc1 logger ct = return $ execParser parse ct
+
+process1 :: Logger -> ([LR],Graph) -> IO ()
+process1 logger (dirs,graph) = do
+    logger (printf "Parsed %d directions, size of graph is %d" (length dirs) (M.size graph))
+    case step graph (cycle dirs) (=="ZZZ") "AAA" of
+      Nothing -> logger "No path from AAA to ZZZ!"
+      Just (_,n) -> logger (printf "Length of path from AAA to ZZZ: %d" n)
+    let init = findInit graph in do
+        logger (printf "Found %d initial nodes" (length init))
+        let paths = map (step graph (cycle dirs) isFinal) init in do
+            result <- foldM proc1 (Just 1) (zip init paths)
+            case result of
+              Nothing -> logger "There is no solution to the problem"
+              Just n -> logger (printf "A solution is reachable in %d steps" n)
     where proc1 acc (init,Nothing) = logger (printf " - No solution from %s" init) >> return Nothing
           proc1 acc (init,Just (node,steps)) = do
               logger (printf " - %s => %s in %d steps" init node steps)
               return (acc >>= (return . lcm steps))
 
 main :: IO ()
-main = doMain process1
+main = doMainPre preproc1 (\logger _ -> logger "Parse error") process1
 
 

@@ -110,22 +110,23 @@ parseAll =
 ------------
 -- Main
 ------------
-process1 :: Logger -> String -> IO ()
-process1 logger ct =
-    case execParser parseAll ct of
-      Nothing -> logger "Parsing error"
-      Just (seeds, mappings) -> do
-          logger (printf "Seeds: %s" (show seeds))
-          logger (printf "Found %d mappings" (length mappings))
-          forM_ mappings $ \m ->
-              logger (printf " - %s ;" (show m))
-          logger "Doing the mapping"
-          result <- foldM map1 seeds mappings
-          logger (printf "Lowest location number: %d" (minimum result))
-          let seedrange = seeds_to_rangeset seeds in do
-              logger (printf "Got seeds on interval %s" (show $ set_span seedrange))
-              result' <- foldM map2 seedrange mappings
-              logger (printf "Lowest location: %d" (set_min result'))
+preproc1 :: Logger -> String -> IO (Maybe ([Int],[Mapping]))
+preproc1 logger ct =
+    return $ execParser parseAll ct
+
+process1 :: Logger -> ([Int],[Mapping]) -> IO ()
+process1 logger (seeds, mappings) = do
+    logger (printf "Seeds: %s" (show seeds))
+    logger (printf "Found %d mappings" (length mappings))
+    forM_ mappings $ \m ->
+        logger (printf " - %s ;" (show m))
+    logger "Doing the mapping"
+    result <- foldM map1 seeds mappings
+    logger (printf "Lowest location number: %d" (minimum result))
+    let seedrange = seeds_to_rangeset seeds in do
+        logger (printf "Got seeds on interval %s" (show $ set_span seedrange))
+        result' <- foldM map2 seedrange mappings
+        logger (printf "Lowest location: %d" (set_min result'))
     where map1 seeds mapping =
               let result = apply_mapping_all seeds mapping in do
                   logger (printf "Mapping %s => %s: %s" (source mapping) (destination mapping) (show result))
@@ -136,6 +137,6 @@ process1 logger ct =
                   return result
 
 main :: IO ()
-main = doMain process1
+main = doMainPre preproc1 (\logger _ -> logger "Parse error") process1
 
 

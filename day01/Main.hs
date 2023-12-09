@@ -8,25 +8,25 @@ import Control.Applicative
 import Control.Monad
 import Parsing
 
-parseNumLetter :: Parser [Char] [Char]
+parseNumLetter :: Parser [Char] Char
 parseNumLetter =
     asum [
-        mkParser "one"   "1",
-        mkParser "two"   "2",
-        mkParser "three" "3",
-        mkParser "four"  "4",
-        mkParser "five"  "5",
-        mkParser "six"   "6",
-        mkParser "seven" "7",
-        mkParser "eight" "8",
-        mkParser "nine"  "9",
-        mkParser "zero"  "0"
+        mkParser "one"   '1',
+        mkParser "two"   '2',
+        mkParser "three" '3',
+        mkParser "four"  '4',
+        mkParser "five"  '5',
+        mkParser "six"   '6',
+        mkParser "seven" '7',
+        mkParser "eight" '8',
+        mkParser "nine"  '9',
+        mkParser "zero"  '0'
     ]
-    where mkParser :: [Char] -> [Char] -> Parser [Char] [Char]
+    where mkParser :: [Char] -> Char -> Parser [Char] Char
           mkParser seq ret = parseAndBack (parseSeq_ seq) >> drop1 >> return ret
 
 processString :: Parser [Char] [Char]
-processString = (end >> return []) <|> ((parseNumLetter <|> keep1) %> processString)
+processString = (end >> return []) <|> ((parseNumLetter <|> keep1) %:> processString)
 
 readInt :: String -> Integer
 readInt [] = 0

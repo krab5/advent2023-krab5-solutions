@@ -29,26 +29,26 @@ concatNums =
                   (nd * 10 * rank x, x * nd + r)
           rank x = if x < 10 then 1 else 10 * (rank (x `div` 10))
 
-process1 :: Logger -> String -> IO ()
-process1 logger ct =
-    case execParser parse ct of
-      Nothing -> logger "Parse error"
-      Just parsed ->
-          let races = uncurry zip parsed in
-              let results = map (uncurry solve) races in do
-                  logger (printf "Found %d races configurations" (length races))
-                  result <- foldM proc1 1 (zip races results)
-                  logger (printf "Product of #solutions: %d" result)
-                  let (rtime,rdist) = bimap concatNums concatNums parsed
-                      result' = solve rtime rdist in do
-                      logger (printf "Actual race time=%d, actual distance=%d" rtime rdist)
-                      logger (printf "Number of optimal solutions: %d" (length result'))
+preproc1 :: Logger -> String -> IO (Maybe ([Int],[Int]))
+preproc1 logger ct = return $ execParser parse ct
+
+process1 :: Logger -> ([Int],[Int]) -> IO ()
+process1 logger parsed = do
+    let races = uncurry zip parsed in
+        let results = map (uncurry solve) races in do
+            logger (printf "Found %d races configurations" (length races))
+            result <- foldM proc1 1 (zip races results)
+            logger (printf "Product of #solutions: %d" result)
+            let (rtime,rdist) = bimap concatNums concatNums parsed
+                result' = solve rtime rdist in do
+                logger (printf "Actual race time=%d, actual distance=%d" rtime rdist)
+                logger (printf "Number of optimal solutions: %d" (length result'))
     where proc1 acc ((t,d),rs) = do
               logger (printf " - Time=%d, Record=%d => %d better solutions" t d (length rs))
               return (acc * (length rs))
 
 
 main :: IO ()
-main = doMain process1
+main = doMainPre preproc1 (\logger _ -> logger "Parse error") process1
 
 
