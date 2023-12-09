@@ -19,20 +19,21 @@ made. A "default" implementation uses the `Maybe` monad, which is good enough fo
 -}
 module Parsing where
 
-import Data.Maybe (isNothing)
+import Parsing.Stream
+
 import Data.Functor
 import Control.Applicative
 import Control.Monad
 import qualified Data.Char as Char
 
--- | The main type for the parser, or parser "transformer". The first type parameter (`m`) is the
+-- | The main type for the parser, or parser "transformer". The first type parameter (@m@) is the
 -- monad wrapping the parsing result. It should be some kind of alternative monad or `MonadFail` in 
 -- theory. This is not mandatory but will greatly impact the lib's usability.
 --
--- The second type parameter (`s`) is the incoming stream. Once again, this could really be anything,
+-- The second type parameter (@s@) is the incoming stream. Once again, this could really be anything,
 -- although a number of convenient functions work on _stream-like_ inputs (see `Stream` typeclass).
 --
--- Last, the third type parameter (`r`) is the type of the outgoing result. This is the type that varies
+-- Last, the third type parameter (@r@) is the type of the outgoing result. This is the type that varies
 -- the most and for which `ParserT` is a well-behave monad.
 newtype ParserT m s r = ParserT { 
     runParserT :: s -> m (s, r)     -- ^ Unwrap the parser, i.e. runs it
@@ -63,8 +64,9 @@ instance Monad m => Monad (ParserT m s) where
   return = pure
   -- | This is effectively the sequencing of parsers with value
   -- transferring, allowing to accumulate values in a contexte, e.g. :
-  -- > parse1 >>= \x -> parse2 >>= \y -> parse3 >>= \z -> return (x, y, z)
-  -- 
+  -- @
+  --     parse1 >>= \x -> parse2 >>= \y -> parse3 >>= \z -> return (x, y, z)
+  -- @
   pa >>= f = ParserT $ \s ->
       runParserT pa s >>= \(s', ra) -> runParserT (f ra) s'
 
@@ -75,16 +77,18 @@ instance (Monad m, Alternative m) => Alternative (ParserT m s) where
   -- | This is lazy "parallel" parsing: if the first parser
   -- succeeds, the others are not run; otherwise, we run the next, and so on. This allows to write
   -- grammars with alternative rules, e.g. :
-  -- > -- A -> 'a'
-  -- > -- A -> 'b'
-  -- > parseA = parseChar 'a' <|> parseChar 'b'
+  -- @
+  --     -- A -> 'a'
+  --     -- A -> 'b'
+  --     parseA = parseChar 'a' <|> parseChar 'b'
+  -- @
   --
   p1 <|> p2 = ParserT $ \s -> runParserT p1 s <|> runParserT p2 s
 
 -- | `MonadFail` instance for the parser. Useful to interrupt parsing with an error message.
--- Of course, it is more useful if the wrapping monad handles error messages correctly.
+-- Of course, it is more useful if the wrapping monad handles error messages meaningfully.
 instance (MonadFail m) => MonadFail (ParserT m s) where
-  fail x = ParserT $ \s -> fail x
+  fail x = ParserT $ \_ -> fail x
 
 infixl 1 >>>
 
@@ -104,6 +108,34 @@ runParser = runParserT
 execParser :: Parser s r -> s -> Maybe r
 execParser = execParserT
 
+-- | A wrapper type/transformer for parsers that take context'd streams (i.e. `Stream` that have
+-- been "lifted" to `Ctx`).
+type ParserCtxT m s a r = ParserT m (Ctx s a) r
+
+-- | Specialized version of `runParserT` for `ParserCtxT`, that takes a normal `Stream` and sets up
+-- a `Ctx` wrapper for it.
+runParserCtxT :: Stream s => ParserCtxT m s a r -> (a -> Bool) -> String -> (Int,Int) -> s a -> m (Ctx s a, r)
+runParserCtxT parser isNewline source start stream = 
+    runParserT parser (withContext isNewline source start stream)
+
+-- | Specialized version of `execParserT` for `ParserCtxT`. Similar to `runParserCtxT` but drops the
+-- remaining stream and keep only the result.
+execParserCtxT :: (Stream s, Functor m) => ParserCtxT m s a r -> (a -> Bool) -> String -> (Int,Int) -> s a -> m r
+execParserCtxT parser isNewline source start stream =
+    fmap snd $ runParserCtxT parser isNewline source start stream
+
+-- | Specialized version of `runParserCtxT` for character streams (with regular newline character for 
+-- setting up the context).
+runParserCtxCT :: Stream s => ParserCtxT m s Char r -> String -> (Int,Int) -> s Char -> m (Ctx s Char, r)
+runParserCtxCT parser source start stream =
+    runParserT parser (withContextC source start stream)
+
+-- | Specialized version of `execParserCtxT` for character streams (with regular newline character for
+-- setting up the context).
+execParserCtxCT :: (Stream s, Functor m) => ParserCtxT m s Char r -> String -> (Int,Int) -> s Char -> m r
+execParserCtxCT parser source start stream =
+    fmap snd $ runParserCtxCT parser source start stream
+
 -- | Create a parser from a function.
 parserTOf :: (s -> m (s, r)) -> ParserT m s r
 parserTOf = ParserT
@@ -112,28 +144,6 @@ parserTOf = ParserT
 parserOf :: (s -> Maybe (s, r)) -> Parser s r
 parserOf = parserTOf
 
--- | A class representing a certain type of polymorphic data structure for which it is
--- possible to get an element + the rest of the structure (presumably without the element).
---
--- This class effectively factorises anything that looks like a sequence (or a list). It 
--- allows for a bit of flexibility when using parsers (rather than using plain old lists).
-class Stream s where
-  -- | Takes the stream and try to extract an element and the remainder of the stream. If not possible,
-  -- return `Nothing`.
-  --
-  -- This function returning `Nothing` implies that the stream is finished (end of string, end of file,
-  -- etc.) or at least that no other character is available.
-  uncons :: s a -> Maybe (a, s a)
-
--- | Tests if the stream is done, i.e. it is empty/no other symbol is available
-done :: Stream s => s a -> Bool
-done = isNothing . uncons
-
--- | Stream instance for lists (the most useful one)
-instance Stream [] where
-  uncons [] = Nothing
-  uncons (t:q) = Just (t, q)
-
 -- | Parser that fails if the predicate is true on the given stream, and succeeds while consuming
 -- nothing otherwise.
 failIf :: Alternative m => (s -> Bool) -> ParserT m s ()
@@ -141,9 +151,11 @@ failIf p = ParserT $ \s -> if p s then empty else pure (s, ())
 
 -- | Parser that always succeeds, consumes nothing and returns `mzero` in the provided `MonadPlus`
 -- instance. This is especially useful for repetition, i.e. :
+-- 
 -- > -- A -> /\ (empty word)
 -- > -- A -> x A
 -- > parseA = (parseChar 'x' >>= \x -> parseA >>= \xs -> x `mplus` xs) <|> zero
+-- 
 --
 zero :: (Monad m, MonadPlus f) => ParserT m s (f a)
 zero = return mzero
@@ -156,7 +168,7 @@ end = failIf (not . done)
 -- redirections during parsing, and especially resetting the incoming stream (when performing simple
 -- lookahead).
 --
--- This parser always succeeds, consume nothing and returns ()
+-- This parser always succeeds, consume nothing and returns `()`
 jump :: Monad m => s -> ParserT m s ()
 jump s = ParserT $ \_ -> return (s, ())
 
@@ -186,21 +198,21 @@ notEmpty = failIf done
 -- | Parser combinator that runs the given parser and then sets back the stream where it
 -- was before parsing.
 --
--- For instance, if the result of parsing `onexyz...` is `1` with remaining stream being `xyz...`, then
--- using `parseAndBack` on this parser will yield the result `1` (result of the parser) but `onexyz...` as
+-- For instance, if the result of parsing @onexyz...@ is @1@ with remaining stream being @xyz...@, then
+-- using `parseAndBack` on this parser will yield the result @1@ (result of the parser) but @onexyz...@ as
 -- the remaining stream.
 parseAndBack :: Monad m => ParserT m s r -> ParserT m s r
 parseAndBack p1 =
     ParserT $ \s -> runParserT (p1 >>= (\x -> jump s >> return x)) s
 
 -- | Parser combinator that repeats the given parser and combine its result using a function, in a
--- left fold fashion (f applied to z and result then passed down next parser).
+-- left fold fashion (@f@ applied to @z@ and result then passed down next parser).
 foldlP :: (Alternative m, Monad m) => (b -> a -> b) -> b -> ParserT m s a -> ParserT m s b
 foldlP f z p =
     (p >>= \x -> foldlP f (f z x) p) <|> return z
 
 -- | Parser combinator that repeats the given parser and combine its result using a function, in a
--- right fold fashion (f combines result of first parser with result of recursive call).
+-- right fold fashion (@f@ combines result of first parser with result of recursive call).
 foldrP :: (Alternative m, Monad m) => (a -> b -> b) -> b -> ParserT m s a -> ParserT m s b
 foldrP f z p =
     (p >>= \x -> foldrP f z p >>= \z' -> return (f x z')) <|> return z
@@ -224,6 +236,14 @@ ptimes :: (Monad m, MonadPlus f) => ParserT m s a -> Int -> ParserT m s (f a)
 ptimes p 0 = return mzero
 ptimes p n | n > 0 = p %:> (ptimes p (n - 1))
 
+-- | Test the head of the stream using the given predicate and succeeds if its true, but consume
+-- nothing. Fails if the stream is empty.
+testP :: (Alternative m, Stream s) => (a -> Bool) -> ParserT m (s a) ()
+testP p = ParserT $ \s ->
+    case uncons s of
+        Just (x, _) | p x -> pure (s, ())
+        _ -> empty
+
 -- | Parser that succeeds if the head of the stream satisfies the given predicate. If it does not or if
 -- the stream is done, it fails. This returns the consumed symbol.
 parseP :: (Alternative m, Stream s) => (a -> Bool) -> ParserT m (s a) a
@@ -232,16 +252,21 @@ parseP p = ParserT $ \s ->
       Just (x, xs) | p x -> pure (xs, x)
       _ -> empty
 
--- | Same as `parserP` but ignores the parsed symbol (and returns `()`).
+-- | Same as `parseP` but ignores the parsed symbol (and returns `()`).
 parseP_ :: (Alternative m, Stream s) => (a -> Bool) -> ParserT m (s a) ()
 parseP_ p = ParserT $ \s ->
     case uncons s of
       Just (x, xs) | p x -> pure (xs, ())
       _ -> empty
 
+-- | Parse until the given predicate is true, and outputs the accumulated parsed characters.
 parseUntil :: (Alternative m, Monad m, MonadPlus f, Stream s) => (a -> Bool) -> ParserT m (s a) (f a)
 parseUntil p =
     (parseP (not . p) %:> parseUntil p) <|> return mzero
+
+-- | Specialized version of `testP` for `Eq` instances.
+testChar :: (Alternative m, Stream s, Eq a) => a -> ParserT m (s a) ()
+testChar c = testP (== c)
 
 -- | Parser that succeeds if the head of the stream is the given symbol, and fails otherwise or if the
 -- stream is done.
@@ -307,6 +332,8 @@ parseNumber =
 -- | Parse a type based on its textual representation given by its `Show` typeclass intsance.
 parseShow :: (Monad m, Alternative m, Show x, Stream s) => x -> ParserT m (s Char) x
 parseShow x = parseSeq_ (show x) >> return x
+
+
 
 
 
