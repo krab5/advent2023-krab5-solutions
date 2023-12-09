@@ -300,7 +300,8 @@ parseDigit = Char.digitToInt <$> (parseP Char.isDigit)
 -- digits with no further constraints. I do not think it works on hexadecimal numbers (?).
 parseNumber :: (Monad m, Alternative m, Stream s) => ParserT m (s Char) Int
 parseNumber =
-    parseDigit >>= parsenum
+    ((parseChar_ '-' >> return (\x -> -x)) <|> (parseChar_ '+' >> return id) <|> (parseAndBack (parseDigit) >> return id))
+        >>= \f -> parseDigit >>= parsenum >>= (return . f)
     where parsenum x = (parseDigit >>= \y -> parsenum (10 * x + y)) <|> return x
 
 -- | Parse a type based on its textual representation given by its `Show` typeclass intsance.
