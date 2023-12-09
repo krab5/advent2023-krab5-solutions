@@ -135,6 +135,12 @@ and more big nums, which Haskell support natively (I did not want to delve in
 big num libraries in other languages tbh).
 
 
+### [Dec 9, 2023]
+
+An easy challenge, what am I suppose to do this week-end???
+
+I must admit I have to give it to lazyness (again), saving me when calculations
+would be terrible otherwise...
 
 
 
