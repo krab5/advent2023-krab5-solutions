@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module Main.Base where
 
 import MonadResult
@@ -23,8 +24,8 @@ read1File process1 k fn = do
       Left (exc :: SomeException) -> printf "[%d] Exception raised while reading file: %s\n[%d] Ignoring...\n" k (displayException exc) k
       Right ct -> do
         start <- getCPUTime
-        r <- (process1 (\x -> printf "[%d] %s\n" k x) ct)
-        stop <- r `deepseq` getCPUTime
+        process1 (\x -> printf "[%d] %s\n" k x) ct
+        stop <- getCPUTime
         printf "[%d] Done [processing time: %g ms]\n" k (getTime start stop)
     return $ k + 1
 
@@ -58,8 +59,8 @@ doMainPre preProc preErr doProcess = do
                             preErr logger res
                             logger "Preprocessing failed; aborting."
                         else let extracted = extract res in do
-                                r <- doProcess logger extracted
-                                procstop <- r `deepseq` getCPUTime
+                                doProcess logger extracted
+                                procstop <- getCPUTime
                                 logger (printf "Done [processing time: %g ms]" (getTime procstart procstop))
               return $ k + 1
 
