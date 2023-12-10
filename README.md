@@ -149,3 +149,69 @@ the parsing library, added new "main makers"... Even did a bit of
 documentation.
 
 
+### [Dec 10, 2023]
+
+An interesting challenge! I think the first part was just to push you to set up
+something to get the path, the second part is the real challenge imo.
+
+This is the first challenge where multiple choices are possible in term of data
+structures. I could have gone for a graph as a linked structure, but in fact the
+input is quite packed, so using a grid/matrix is easier with no overhead.
+
+For establishing if a point is in the inside or outside of the path, I used the
+intersection technique: for a given point (not in the path), draw an horizontal
+and a vertical line up to the border. Count how many times this line intersect
+with the path. If it that number is odd in all four directions (north, south,
+east and west), the point is inside.
+
+This works because the path is connected (it makes a loop) and because you have
+only two directions for that path (horizontal and vertical).
+
+The only difficulty is to handle the line when it goes over a segment of the
+path, i.e.:
+```
+> ..╔═══╝..
+```
+
+In that case, you have to consider the turns at the beginning and end of the
+segment. If they are identical, you crossed the path twice; otherwise, you
+crossed the path only once :
+```
+  ABCDEFGHIJKLM
+0 ..........║..
+1 ..╔═══╗...║..
+2 ..║...╚═══╝..
+3 ..║..........
+```
+
+Intersecting the path to the east at 1A gives 3 points of intersection, and
+same thing for 2A. Intersecting the path to the south at G0 gives 1 point of
+intersection. The rational is that in the first case, if you were using reals
+and were slightly below the border, you would indeed have two points of
+intersection (or 0 if you are slightly above, it ends up being the same thing as
+far as the algorithm goes). In the second case, no matter if you are slightly
+above/below (or in that case left/right) of the path, you have to cross it
+exactly once.
+
+<br>
+
+The only thing I am moderately happy about is that it is difficult to argue
+about the safety of my code. In fact, I wrote the `Grid` module in a fairly safe
+way, but the different parts of algorithms naturally exclude some edge cases.
+
+Typically, the `Pipes` module is not very safe, but it (should be) is used
+safely, by virtue of the algorithms' design... Nonetheless, if I had time and
+motivation, I would render the code a bit safer, while trying not to incorporate
+too much overhead.
+
+<br>
+
+I made quite a good grid library for fun, with needlessly fancy features (the 
+program colors tiles that are in the path, that are in the inside, etc.). I
+suspect it will be useful again later in the AoC (it always is...).
+
+I will never in my life be thankful enough for Haskell's `vector` and `set`
+libraries.
+
+
+
