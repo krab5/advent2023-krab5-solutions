@@ -214,4 +214,15 @@ I will never in my life be thankful enough for Haskell's `vector` and `set`
 libraries.
 
 
+### [Dec 11, 2023]
+
+An easy challenge to start the week. I decided to go with a list of nodes and
+then update their coordinates when expanding, with a direct formula. The idea is
+that for any _x_, you count the number of columns before that and add the
+expansion factor minus 1 for each one (and similarly for _y_ and rows) and there
+you go. Of course, you must not forget the minus 1, otherwise you expand one
+times too much (had trouble wrapping my monkey brain around that, what a stupid
+mistake).
+
+
 
