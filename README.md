@@ -225,4 +225,25 @@ times too much (had trouble wrapping my monkey brain around that, what a stupid
 mistake).
 
 
+### [Dec 12, 2023]
+
+Oh boy, this challenge. I am not a great fan of combinatorics, this one really
+gave me some headaches.
+
+I started with a simple, "naive" algorithm, that generates/count every
+solutions. Of course, you get a lot of redundant calculation, but I did not
+mind... Until part 2.
+
+Part 2 was simply out of reach with my first algorithm. In fact, the solution is
+in the order of 10^14, not a chance I could get there that way.
+
+I tried reasoning with groups instead of single elements, I tried
+parallelization (a little bit), I tried early pruning heuristics... In the end,
+I manage to devise a divide-and-conquer strategy, and with a few heuristic
+tweaks (on the division part in particular), I was able to drag down execution
+time below 1 minute.
+
+Not gonna lie, quite proud of it. But the amount of time I spent debugging weird
+edge cases and mismatched counts drove me insane.
+
 
