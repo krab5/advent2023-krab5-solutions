@@ -247,3 +247,12 @@ Not gonna lie, quite proud of it. But the amount of time I spent debugging weird
 edge cases and mismatched counts drove me insane.
 
 
+### [Dec 13, 2023]
+
+Not a terribly interesting challenge. I went to it in a relatively brute-force-y
+way (albeit with a few optimisations, which are more coming from how Haskell
+works). For the second part my code is a bit meh, because I wanted to show which
+position the smudge was. Without that, the code would be much, much cleaner.
+
+
+
