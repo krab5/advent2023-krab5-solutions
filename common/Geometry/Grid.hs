@@ -4,8 +4,6 @@ import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 import Control.Monad ((>>=))
 import qualified Data.Vector as V
--- For *very* pretty printing
-import TermColor
 
 -- | The grid type.
 data Grid a = Grid {
@@ -45,6 +43,12 @@ set g c v =
         Nothing -> g
         Just i -> g { g_content = g_content g V.// [(i, v)] }
 
+getRow :: Grid a -> Int -> [a]
+getRow g r = map (\c -> g `at` (r,c)) [0..g_width g - 1]
+
+getColumn :: Grid a -> Int -> [a]
+getColumn g c = map (\r -> g `at` (r,c)) [0..g_height g - 1]
+
 -- | Find the coordinates of an element in the grid that satisfies the given predicate.
 -- Which element is returned first is uncertain in theory (in practice, it will probably be
 -- the smallest in term of (row,column), in lexicographic order).
@@ -72,23 +76,6 @@ pretty :: (a -> Char) -> Grid a -> String
 pretty showC g =
     intercalate "\n" $ map (\ro -> map (\co -> showC $ g `at` (ro,co)) [0..g_width g - 1]) [0..g_height g - 1]
 
-
--- | Pretty print the grid in a string with potential term colors (ANSI escape codes) depending on a set of
--- predicates. Useful for highlighting some parts of the grid, typically.
-prettyMarkup :: (a -> Char) -> [((Int,Int) -> a -> Bool, TermColor)] -> Grid a -> String
-prettyMarkup showC styleIf g =
-    intercalate "\n" $ map concat $ map (\ro -> map (\co -> mkc (ro,co)) [0..g_width g - 1]) [0..g_height g - 1]
-    where mkc x =
-            let v = g `at` x in
-                let c = showC v in
-                    case findTc x v styleIf of
-                        Nothing -> [c]
-                        Just tc -> style tc [c]
-          findTc x v [] = Nothing
-          findTc x v ((p,t):ts)
-            | p x v = Just t
-            | otherwise = findTc x v ts
-    
 
 
 
