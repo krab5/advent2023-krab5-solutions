@@ -3,7 +3,9 @@ module Main where
 import Main.Base
 import Pipes
 import Movement
-import Grid
+import qualified SGR
+import Geometry.Grid
+import Geometry.Grid.Pretty
 import Text.Printf
 import Control.Monad
 import Data.Maybe (fromJust)
@@ -95,9 +97,9 @@ process1 logger (g,start,d1,d2) = do
           inside = getInside g path
           -- HERE COMES BY GRIIIIIID, COULD SHE BE ANY CUTER????
           prettyGrid = 
-              prettyMarkup showTile [(_isStart,mkBackground 90)
-                                    ,(_inPath,mkBackground 34)
-                                    ,(_inside,mkBackground 220)] g
+              prettyMarkup showTile [(_isStart, SGR.bg 90)
+                                    ,(_inPath , SGR.bg 34)
+                                    ,(_inside , SGR.bg 220)] g
           _isStart x _ = x == start
           _inPath x _ = x `S.member` path
           _inside x _ = x `S.member` inside

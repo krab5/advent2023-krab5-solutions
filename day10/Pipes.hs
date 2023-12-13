@@ -1,7 +1,7 @@
 module Pipes where
 
 import Movement
-import Grid
+import Geometry.Grid
 
 data Pipe = Pipe { end1 :: Direction, end2 :: Direction }
 
