@@ -1,5 +1,5 @@
-{-# LANGUAGE UndecidableInstances, MagicHash #-}
-module TermColor where
+{-# LANGUAGE UndecidableInstances #-}
+module SGR where
 
 data Color =
     Color3 Int | Color8 Int | Color24 (Int,Int,Int)
