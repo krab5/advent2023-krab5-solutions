@@ -1,4 +1,4 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances, IncoherentInstances, MonoLocalBinds #-}
 module SGR where
 
 data Color =
@@ -60,13 +60,13 @@ apply ss x = (concat $ map (codeSGR . setSGR) ss) ++ x
 class SGRColor a where
     getColor :: a -> Color
 
+instance Integral a => SGRColor a where
+    getColor = Color8 . fromInteger . toInteger
+
 instance Integral a => SGRColor (a,a,a) where
     getColor (r,g,b) = 
         Color24 (reg r, reg g, reg b)
         where reg = fromInteger . toInteger
-
-instance Integral a => SGRColor a where
-    getColor = Color8 . fromInteger . toInteger
 
 instance SGRColor String where
     getColor "black"   = Color3 0
