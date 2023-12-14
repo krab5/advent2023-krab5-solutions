@@ -255,4 +255,20 @@ works). For the second part my code is a bit meh, because I wanted to show which
 position the smudge was. Without that, the code would be much, much cleaner.
 
 
+### [Day 14, 2023]
+
+Overall a fun challenge. My first implementation for calculating tilting in a
+direction was based on immutable vectors and was not very efficient. The part 2
+was obviously some sort of cycle finding, but I was afraid the cycle would be
+enormous and/or late, and so that the calculation would take ages...
+
+I ended up writing a version of Grid with mutable vectors. They are faster
+overall, especially when iterating a lot, and you can always use a ST monad to
+make your algorithm even faster.
+
+Eventually though, the cycle is small and early. WHAT A DRAG.
+
+
+
+
 
