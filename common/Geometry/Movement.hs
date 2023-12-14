@@ -1,4 +1,4 @@
-module Movement where
+module Geometry.Movement where
 
 data Direction = North | East | West | South deriving (Eq,Ord,Enum,Show)
 

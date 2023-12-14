@@ -2,8 +2,8 @@ module Main where
 
 import Main.Base
 import Pipes
-import Movement
 import qualified SGR
+import Geometry.Movement
 import Geometry.Grid
 import Geometry.Grid.Pretty
 import Text.Printf
