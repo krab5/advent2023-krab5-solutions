@@ -1,7 +1,23 @@
+{-|
+Module: Grid
+Description: Grid system (immutable)
+Copyright: (c) krab5, 2023
+License: GPL-3
+Maintainer: crab.delicieux@gmail.com
+
+This small module implements a grid system with default value (for edge cases) and
+with an underlying boxed efficient vector.
+
+It almost looks like a wrapper for vector with a coordinate transformation function,
+plus some custom, practical functions on it.
+
+Mutable version: see `Geometry.Grid.Mutable`.
+
+-}
 module Geometry.Grid where
 
 import Data.List (intercalate)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Control.Monad ((>>=))
 import qualified Data.Vector as V
 
@@ -12,6 +28,12 @@ data Grid a = Grid {
     g_height :: Int,            -- ^ Grid's height
     g_content :: V.Vector a     -- ^ Grid's content (should _never_ be accessed directly!). This is a 1-dimensional vector; values are stored by by line.
 }
+
+instance Eq a => Eq (Grid a) where
+    g1 == g2 = 
+        (g_width g1 == g_width g2) && (g_height g1 == g_height g2) 
+        && (g_default g1 == g_default g2)
+        && V.eqBy (==) (g_content g1) (g_content g2)
 
 -- | Test if the given coordinates are in the boundaries set by the grid.
 inBound :: Grid a -> (Int,Int) -> Bool
@@ -43,11 +65,26 @@ set g c v =
         Nothing -> g
         Just i -> g { g_content = g_content g V.// [(i, v)] }
 
+-- | Sets a batch of values as a list of (coordinate, value) pairs. Coordinates out of bound are
+-- ignored.
+sets :: Grid a -> [((Int,Int), a)] -> Grid a
+sets g vs =
+    let ss = mapMaybe (\(x,v) -> (,v) <$> _id g x) $ vs
+        in g { g_content = V.unsafeUpd (g_content g) ss }
+
+-- | Get the list of elements in the given row (in order).
 getRow :: Grid a -> Int -> [a]
 getRow g r = map (\c -> g `at` (r,c)) [0..g_width g - 1]
 
+-- | Get the list of elements in the given column (in order).
 getColumn :: Grid a -> Int -> [a]
 getColumn g c = map (\r -> g `at` (r,c)) [0..g_height g - 1]
+
+-- | Do a left fold on the grid, with the combining function also presenting the coordinates.
+-- Elements are presented column-wise then row-wise, i.e. (0,0),(0,1),(0,2)...(1,0),(1,1),...
+foldlc :: (b -> (Int,Int) -> a -> b) -> b -> Grid a -> b
+foldlc f z g =
+    V.ifoldl (\acc i x -> f acc (_coord g i) x) z $ g_content g
 
 -- | Find the coordinates of an element in the grid that satisfies the given predicate.
 -- Which element is returned first is uncertain in theory (in practice, it will probably be
