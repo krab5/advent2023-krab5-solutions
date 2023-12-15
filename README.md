@@ -269,6 +269,13 @@ make your algorithm even faster.
 Eventually though, the cycle is small and early. WHAT A DRAG.
 
 
+### [Day 15, 2023]
+
+A fun, easy challenge, and exactly the kind of problem I love: some kind of
+execution semantics to be applied. I was greatly helped by my now quit developed
+parsing library, the rest is just very easy functions. I modularized everything
+more as a way to have clean code (which I am fairly okay with tbh).
+
 
 
 
