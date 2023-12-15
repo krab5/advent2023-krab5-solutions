@@ -1,3 +1,16 @@
+{-|
+Module: Parsing.Stream
+Description: Modelling generic streams, to be used with wrappers.
+Copyright: (c) krab5, 2023
+License: GPL-3
+Maintainer: crab.delicieux@gmail.com
+
+This part of the parsing library proposes a generalization of streams of symbols using typeclasses.
+
+This allows to propose other input than simple strings for parser, and allow to write stream "wrappers",
+that allow to annotate streams with context or special behaviours upon reading some symbols.
+
+-}
 module Parsing.Stream where
 
 import Data.Maybe (isNothing)
@@ -74,5 +87,42 @@ withContextC = withContext (== '\n')
 -- | Usual starting coordinates for a context (line 1, column 1).
 contextStart :: (Int,Int)
 contextStart = (1,1)
+
+
+-- | Wrap a symbol stream so that it ignores some symboles when reading it. Bascially, upon unconsing
+-- the stream, if the head satisfies a predicate, then it is discarded and the tail is unconsed instead,
+-- recursively.
+--
+-- This is especially practical when you want to quickly ignore a whole class of characters (e.g. white
+-- spaces).
+data Ignoring s a = Ignoring {
+    i_ignore :: a -> Bool,          -- ^ Predicate determining what should be ignored
+    i_stream :: s a                 -- ^ Wrapped stream
+}
+
+-- | Build an `Ignoring` stream from a normal stream and an exclusion predicate
+ignoring :: Stream s => (a -> Bool) -> s a -> Ignoring s a
+ignoring ign s = Ignoring { i_ignore = ign, i_stream = s }
+
+-- | `Stream` instance for `Ignoring`. The unconsing checks the head to see if it should be 
+-- ignored, and pursue the unconsing if needed.
+instance Stream s => Stream (Ignoring s) where
+    uncons igs =
+        case uncons $ i_stream igs of
+            Nothing -> Nothing
+            Just (t, q) | i_ignore igs t -> uncons $ igs { i_stream = q }
+            Just (t, q) -> Just (t, igs { i_stream = q })
+
+-- | A convenient show instance for a stream wrapped in `Ignoring`, that shows the first symbols
+-- and then some ellipses, except if the stream is small enough.
+instance (Stream s, Show a) => Show (Ignoring s a) where
+    show ign =
+        "<<" ++ stream False 5 (i_stream ign) ++ " (ignoring some)>>"
+        where stream _ 0 _ = "..."
+              stream b n s = 
+                  case uncons s of
+                      Nothing -> if not b then "empty" else ""
+                      Just (t, q) -> show t ++ stream True (n - 1) q
+
 
 

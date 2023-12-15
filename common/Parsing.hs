@@ -217,6 +217,12 @@ foldrP :: (Alternative m, Monad m) => (a -> b -> b) -> b -> ParserT m s a -> Par
 foldrP f z p =
     (p >>= \x -> foldrP f z p >>= \z' -> return (f x z')) <|> return z
 
+-- | Repeat the given parser and accumulate the result in a `MonadPlus`. The parser succeeds if
+-- the input is empty (and returns `mzero`).
+repeatP :: (Alternative m, Monad m, MonadPlus f) => ParserT m s r -> ParserT m s (f r)
+repeatP parser =
+    (parser %:> repeatP parser) <|> return mzero
+
 infixr 3 %>, %:>
 
 -- | Convenient combinator for parsers which result is a `MonadPlus`, that chains the parsers and
@@ -263,6 +269,12 @@ parseP_ p = ParserT $ \s ->
 parseUntil :: (Alternative m, Monad m, MonadPlus f, Stream s) => (a -> Bool) -> ParserT m (s a) (f a)
 parseUntil p =
     (parseP (not . p) %:> parseUntil p) <|> return mzero
+
+-- | Dual of `parseUntil`, parse the stream while the predicate is true, and accumulate the parsing
+-- result in a `MonadPlus`.
+parseWhile :: (Alternative m, Monad m, MonadPlus f, Stream s) => (a -> Bool) -> ParserT m (s a) (f a)
+parseWhile p =
+    (parseP p %:> parseWhile p) <|> return mzero
 
 -- | Specialized version of `testP` for `Eq` instances.
 testChar :: (Alternative m, Stream s, Eq a) => a -> ParserT m (s a) ()
