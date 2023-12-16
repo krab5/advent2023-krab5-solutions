@@ -277,5 +277,17 @@ parsing library, the rest is just very easy functions. I modularized everything
 more as a way to have clean code (which I am fairly okay with tbh).
 
 
+### [Day 16, 2023]
+
+Another quite fun challenge imo. I love mirror-based problems.
+
+I went out of my way to give a _fancy_ representation for the beams using
+unicode framing characters, AND I DO NOT REGRET IT.
+
+I could have gone with a simple boolean grid, parallel search and so on, and I
+could have a calculation time under a minute, BUT NO. I WANT THE PRETTY BEAMS.
+
+I think I spent twice as much time setting up pretty printing than writing the
+actual algorithm for finding where the beam is going lmao.
 
 
