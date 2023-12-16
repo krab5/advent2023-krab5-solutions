@@ -20,6 +20,7 @@ import Data.List (intercalate)
 import Data.Maybe (fromMaybe, mapMaybe)
 import Control.Monad ((>>=))
 import qualified Data.Vector as V
+import qualified Data.Vector.Mutable as MV
 
 -- | The grid type.
 data Grid a = Grid {
@@ -72,6 +73,15 @@ sets g vs =
     let ss = mapMaybe (\(x,v) -> (,v) <$> _id g x) $ vs
         in g { g_content = V.unsafeUpd (g_content g) ss }
 
+-- | Modify the given place in the grid using the provided function, that will be called with
+-- the value at that position before modification.
+modify :: Grid a -> (Int,Int) -> (a -> a) -> Grid a
+modify grid pos f =
+    case _id grid pos of
+        Nothing -> grid
+        Just i ->
+            grid { g_content = V.modify (\vec -> MV.read vec i >>= (MV.write vec i . f)) $ g_content grid }
+
 -- | Get the list of elements in the given row (in order).
 getRow :: Grid a -> Int -> [a]
 getRow g r = map (\c -> g `at` (r,c)) [0..g_width g - 1]
@@ -98,6 +108,13 @@ allCoords :: Grid a -> [(Int,Int)]
 allCoords grid =
     [ (i, j) | i <- [0..g_width grid - 1]
              , j <- [0..g_height grid - 1] ]
+
+-- | Make a grid with the given dimensions, filling it up with the given value and setting
+-- up the given default value (they may be different).
+mkGrid :: Int -> Int -> a -> a -> Grid a
+mkGrid width height val def =
+    Grid { g_width = width, g_height = height, g_default = def
+         , g_content = V.replicate (width * height) val }
 
 -- | Transform a string into a grid using the provided character parsing function.
 parseGrid :: (Char -> a) -> a -> String -> Grid a
