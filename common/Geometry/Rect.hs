@@ -10,6 +10,11 @@ infixl 6 |+|
 
 data Rect a = Rect { startx :: a, starty :: a, width :: a, height :: a }
 
+inside :: (Num a, Ord a) => (a,a) -> Rect a -> Bool
+inside (x,y) r = 
+    (x >= startx r) && (x < startx r + width r)
+    && (y >= starty r) && (y < starty r + height r)
+
 mkRect :: (a, a) -> (a, a) -> Rect a
 mkRect (x,y) (w,h) = Rect { startx = x, starty = y, width = w, height = h }
 
